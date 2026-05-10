@@ -18,6 +18,7 @@ class BaseRAGAgent:
         self.subject_name = subject_name
 
         self.db = None
+        self.memory = []
 
     def initialize(self):
 
@@ -47,6 +48,14 @@ class BaseRAGAgent:
 
         results = self.db.similarity_search(question, k=5)
 
+        conversation_context = ""
+
+        for message in self.memory[-6:]:
+
+            conversation_context += (
+            f"{message['role']}: "
+            f"{message['content']}\n"
+            )
         context = ""
 
         for result in results:
@@ -70,15 +79,31 @@ Only answer from the provided context.
                 {
                     'role': 'user',
                     'content': f"""
-Context:
+Conversation History:
+{conversation_context}
+retrieved context:
 {context}
-
 Question:
 {question}
 """
                 }
+
             ]
+
         )
+        answer = response['message']['content']
+
+    # Save memory
+        self.memory.append({
+        "role": "user",
+        "content": question
+    })
+
+        self.memory.append({
+        "role": "assistant",
+        "content": answer
+    })
+
 
         return response['message']['content']
 
